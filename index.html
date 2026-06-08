@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPLITFLAP — Todo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Roboto+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --flap-bg: #1a1a1a;
+  --flap-text: #f5e6c8;
+  --flap-shadow: #0a0a0a;
+  --flap-divider: #2a2a2a;
+  --housing-bg: #111111;
+  --housing-border: #2a2a2a;
+  --accent: #e8a838;
+  --accent-glow: rgba(232, 168, 56, 0.3);
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --text: #e8e0d4;
+  --text-dim: #7a7468;
+  --success: #4ecb71;
+  --danger: #e85454;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════
+   NOISE TEXTURE OVERLAY
+   ═══════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN VIEW
+   ═══════════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+#app.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+  position: absolute;
+}
+
+.header-badge {
+  font-family: 'Instrument Serif', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-badge::before,
+.header-badge::after {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: var(--housing-border);
+}
+
+/* ═══════════════════════════════════════════
+   SPLIT-FLAP HOUSING
+   ═══════════════════════════════════════════ */
+.flap-housing {
+  background: var(--housing-bg);
+  border: 1px solid var(--housing-border);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    0 1px 0 rgba(255,255,255,0.05) inset;
+  position: relative;
+  max-width: 94vw;
+  width: 100%;
+}
+
+.flap-housing::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20px; right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+
+.task-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.task-counter {
+  font-family: 'Roboto Mono', monospace;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+/* ═══════════════════════════════════════════
+   SPLIT-FLAP CHARACTERS
+   ═══════════════════════════════════════════ */
+.flap-row {
+  display: flex;
+  gap: var(--flap-gap, 4px);
+  flex-wrap: nowrap;
+  justify-content: center;
+  min-height: 80px;
+  align-items: center;
+}
+
+.flap-char {
+  width: var(--flap-w, 50px);
+  height: var(--flap-h, 72px);
+  position: relative;
+  perspective: 300px;
+  flex-shrink: 0;
+}
+
+.flap-char.space {
+  width: var(--flap-space-w, 20px);
+}
+
+.flap-char .top,
+.flap-char .bottom {
+  position: absolute;
+  left: 0; right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: var(--flap-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flap-char .top {
+  top: 0;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 1.5px solid var(--flap-divider);
+  align-items: flex-end;
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.06) inset;
+}
+
+.flap-char .bottom {
+  bottom: 0;
+  border-radius: 0 0 4px 4px;
+  align-items: flex-start;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.flap-char .top span,
+.flap-char .bottom span {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: var(--flap-font, 2.4rem);
+  color: var(--flap-text);
+  line-height: var(--flap-h, 72px);
+  display: block;
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.flap-char .top span {
+  transform: translateY(50%);
+}
+
+.flap-char .bottom span {
+  transform: translateY(-50%);
+}
+
+/* Flipping animation */
+.flap-char .flipping {
+  position: absolute;
+  left: 0; right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: var(--flap-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.flap-char .flip-top {
+  top: 0;
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom;
+  animation: flipTop 0.15s ease-in forwards;
+  align-items: flex-end;
+}
+
+.flap-char .flip-bottom {
+  bottom: 0;
+  border-radius: 0 0 4px 4px;
+  transform-origin: top;
+  animation: flipBottom 0.15s 0.15s ease-out forwards;
+  align-items: flex-start;
+  transform: rotateX(90deg);
+}
+
+.flap-char .flipping span {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: var(--flap-font, 2.4rem);
+  color: var(--flap-text);
+  line-height: var(--flap-h, 72px);
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.flap-char .flip-top span { transform: translateY(50%); }
+.flap-char .flip-bottom span { transform: translateY(-50%); }
+
+@keyframes flipTop {
+  0% { transform: rotateX(0deg); }
+  100% { transform: rotateX(-90deg); }
+}
+
+@keyframes flipBottom {
+  0% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+/* ═══════════════════════════════════════════
+   TOP BAR (rank + brand + session)
+   ═══════════════════════════════════════════ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 94vw;
+  margin-bottom: 1.5rem;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rank-card {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--housing-border);
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+}
+
+.nonneg-card {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--surface);
+  border: 1px solid rgba(232, 84, 84, 0.2);
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+}
+
+.nonneg-icon {
+  font-size: 0.7rem;
+}
+
+.nonneg-count {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--danger);
+  line-height: 1;
+}
+
+.nonneg-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+.nonneg-card.all-clear {
+  border-color: rgba(78, 203, 113, 0.2);
+}
+
+.nonneg-card.all-clear .nonneg-count {
+  color: var(--success);
+}
+
+.rank-number {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.rank-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+.rank-card.hidden {
+  visibility: hidden;
+}
+
+.session-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--housing-border);
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+}
+
+.session-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.session-time {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════
+   DEADLINE BAR
+   ═══════════════════════════════════════════ */
+.deadline-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  width: 100%;
+  max-width: 94vw;
+  margin-top: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--housing-border);
+  border-radius: 10px;
+  padding: 0.7rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.deadline-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.deadline-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.deadline-input {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--housing-bg);
+  border: 1px solid var(--housing-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.deadline-input:focus {
+  border-color: var(--accent);
+}
+
+.deadline-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+.deadline-countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex: 1;
+  justify-content: center;
+  z-index: 1;
+}
+
+.countdown-value {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.countdown-unit {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+.deadline-bar.urgent .countdown-value {
+  color: var(--danger);
+  animation: pulse-urgent 1s ease-in-out infinite;
+}
+
+.deadline-bar.overdue .countdown-value {
+  color: var(--danger);
+}
+
+.deadline-bar.overdue .deadline-bar {
+  border-color: rgba(232, 84, 84, 0.3);
+}
+
+@keyframes pulse-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.deadline-progress-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.03);
+}
+
+.deadline-progress {
+  height: 100%;
+  background: var(--accent);
+  transition: width 1s linear, background-color 0.5s;
+  border-radius: 0 2px 2px 0;
+}
+
+.deadline-bar.urgent .deadline-progress {
+  background: var(--danger);
+}
+
+/* ═══════════════════════════════════════════
+   TIMER DISPLAY
+   ═══════════════════════════════════════════ */
+.timer-housing {
+  background: var(--housing-bg);
+  border: 1px solid var(--housing-border);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  max-width: 94vw;
+  width: 100%;
+}
+
+.timer-primary {
+  margin-top: 1rem;
+}
+
+.timer-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.timer-flaps {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-separator {
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--flap-font, 2.4rem);
+  color: var(--accent);
+  margin: 0 6px;
+  animation: blink 1s step-end infinite;
+}
+
+.timer-separator.paused {
+  animation: none;
+  opacity: 0.3;
+}
+
+@keyframes blink {
+  50% { opacity: 0.2; }
+}
+
+/* ═══════════════════════════════════════════
+   CONTROLS
+   ═══════════════════════════════════════════ */
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  align-items: center;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-done {
+  background: var(--success);
+  color: #0d1a0f;
+  padding: 1rem 2.5rem;
+  border-radius: 60px;
+  font-size: 1rem;
+  box-shadow: 0 4px 20px rgba(78, 203, 113, 0.3);
+}
+
+.btn-done:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(78, 203, 113, 0.4);
+}
+
+.btn-done:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-pause {
+  background: var(--surface);
+  color: var(--text-dim);
+  padding: 0.85rem 1.5rem;
+  border-radius: 60px;
+  border: 1px solid var(--housing-border);
+}
+
+.btn-pause:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-pause.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(232, 168, 56, 0.08);
+}
+
+.btn-skip {
+  background: transparent;
+  color: var(--text-dim);
+  padding: 0.85rem 1.2rem;
+  border-radius: 60px;
+  border: 1px solid transparent;
+}
+
+.btn-skip:hover {
+  color: var(--text);
+  border-color: var(--housing-border);
+}
+
+.btn-edit {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--housing-border);
+  color: var(--text-dim);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  z-index: 100;
+}
+
+.btn-edit:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════════
+   ALL DONE STATE
+   ═══════════════════════════════════════════ */
+.all-done-message {
+  text-align: center;
+  padding: 3rem;
+}
+
+.all-done-message .emoji {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.all-done-message h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+
+.all-done-message p {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+/* ═══════════════════════════════════════════
+   EDIT SCREEN
+   ═══════════════════════════════════════════ */
+#editScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  padding: 2rem;
+  overflow-y: auto;
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+#editScreen.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.edit-header {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.edit-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.edit-date {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.btn-back {
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--housing-border);
+  font-size: 0.8rem;
+}
+
+.btn-back:hover {
+  border-color: var(--accent);
+}
+
+.edit-list {
+  max-width: 600px;
+  margin: 0 auto;
+  list-style: none;
+}
+
+.edit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--housing-border);
+  transition: opacity 0.3s;
+}
+
+.edit-item.done {
+  opacity: 0.45;
+}
+
+.edit-item .drag-handle {
+  cursor: grab;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  padding: 0.2rem;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+  user-select: none;
+  line-height: 1;
+}
+
+.edit-item:hover .drag-handle {
+  opacity: 0.8;
+}
+
+.edit-item .drag-handle:active {
+  cursor: grabbing;
+}
+
+.edit-item.dragging {
+  opacity: 0.4;
+  background: rgba(232, 168, 56, 0.05);
+}
+
+.edit-item.drag-over {
+  border-top: 2px solid var(--accent);
+}
+
+.edit-item .priority-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--housing-border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  color: var(--text-dim);
+}
+
+.edit-item .priority-toggle:hover {
+  border-color: var(--accent);
+}
+
+.edit-item .priority-toggle.active {
+  background: rgba(232, 168, 56, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.edit-item .priority-badge {
+  font-size: 0.85rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.edit-item .task-text {
+  flex: 1;
+  font-size: 0.95rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.edit-item .task-text:focus {
+  border-bottom-color: var(--accent);
+}
+
+.edit-item.done .task-text {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.edit-item.non-negotiable .task-text {
+  font-weight: 700;
+}
+
+.edit-item .status-badge {
+  font-size: 0.85rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.edit-item .delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.3rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.edit-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.edit-item .delete-btn:hover {
+  color: var(--danger);
+  background: rgba(232, 84, 84, 0.1);
+}
+
+.add-task-row {
+  max-width: 600px;
+  margin: 1rem auto 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-task-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--housing-border);
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-task-input:focus {
+  border-color: var(--accent);
+}
+
+.add-task-input::placeholder {
+  color: var(--text-dim);
+}
+
+.btn-add {
+  background: var(--accent);
+  color: #1a1a1a;
+  padding: 0.75rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn-add:hover {
+  filter: brightness(1.1);
+}
+
+.non-negotiable-hint {
+  max-width: 600px;
+  margin: 0.75rem auto 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.export-row {
+  max-width: 600px;
+  margin: 1.5rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--housing-border);
+}
+
+.btn-export {
+  background: transparent;
+  color: var(--text-dim);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--housing-border);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+.btn-export:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════
+   FILE LOADER
+   ═══════════════════════════════════════════ */
+.file-loader {
+  text-align: center;
+  padding: 3rem;
+}
+
+.file-loader h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 1rem;
+}
+
+.file-loader p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.file-drop-zone {
+  border: 2px dashed var(--housing-border);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(232, 168, 56, 0.05);
+}
+
+.file-drop-zone label {
+  cursor: pointer;
+  display: block;
+}
+
+.file-drop-zone .drop-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.file-drop-zone .drop-text {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.file-drop-zone input[type="file"] {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   CONFETTI & CELEBRATION
+   ═══════════════════════════════════════════ */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+}
+
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  background: var(--success);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.1s;
+}
+
+.screen-flash.active {
+  animation: flash 0.6s ease-out;
+}
+
+@keyframes flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .flap-housing { padding: 1.2rem; }
+  .controls { flex-wrap: wrap; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="screen-flash" id="screenFlash"></div>
+<div class="celebration-overlay" id="celebration"></div>
+
+<!-- ═══════════ MAIN VIEW ═══════════ -->
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="rank-card" id="rankCard">
+        <span class="rank-number" id="rankNumber">—</span>
+        <span class="rank-label" id="rankLabel">of — remaining</span>
+      </div>
+      <div class="nonneg-card" id="nonnegCard">
+        <span class="nonneg-icon">❗</span>
+        <span class="nonneg-count" id="nonnegCount">0</span>
+        <span class="nonneg-label">must-do left</span>
+      </div>
+    </div>
+    <div class="header-badge">SPLITFLAP</div>
+    <div class="session-pill" id="sessionPill">
+      <span class="session-label">SESSION</span>
+      <span class="session-time" id="sessionTime">00:00:00</span>
+    </div>
+  </div>
+
+  <div class="flap-housing" id="taskDisplay">
+    <div class="task-label">
+      <span>CURRENT TASK</span>
+      <span class="task-counter" id="taskCounter">— / —</span>
+    </div>
+    <div class="flap-row" id="flapRow"></div>
+  </div>
+
+  <div class="deadline-bar" id="deadlineBar">
+    <div class="deadline-left">
+      <span class="deadline-label">HARD STOP</span>
+      <input type="time" class="deadline-input" id="deadlineInput" value="18:00">
+    </div>
+    <div class="deadline-countdown" id="deadlineCountdown">
+      <span class="countdown-value" id="countdownValue">—</span>
+      <span class="countdown-unit" id="countdownUnit">remaining</span>
+    </div>
+    <div class="deadline-progress-wrap">
+      <div class="deadline-progress" id="deadlineProgress" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div class="timer-housing timer-primary">
+    <div class="timer-label">TASK ELAPSED</div>
+    <div class="timer-flaps" id="timerFlaps"></div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="btn btn-pause" id="btnPause" onclick="togglePause()">PAUSE</button>
+    <button class="btn btn-done" id="btnDone" onclick="completeTask()">DONE</button>
+    <button class="btn btn-skip" id="btnSkip" onclick="skipTask()">SKIP →</button>
+  </div>
+</div>
+
+<!-- ═══════════ EDIT SCREEN ═══════════ -->
+<div id="editScreen" class="hidden">
+  <div class="edit-header">
+    <div>
+      <div class="edit-title">All Tasks</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="edit-date" id="editDate"></div>
+      <button class="btn btn-back" onclick="closeEdit()">← Back</button>
+    </div>
+  </div>
+  <ul class="edit-list" id="editList"></ul>
+  <div class="add-task-row">
+    <input type="text" class="add-task-input" id="addTaskInput" placeholder="Add a new task…">
+    <button class="btn btn-add" onclick="addNewTask()">ADD</button>
+  </div>
+  <div class="non-negotiable-hint">Prefix with <strong>**!</strong> to mark as non-negotiable (bold + ❗)</div>
+  <div class="export-row">
+    <button class="btn btn-export" onclick="exportSessionLog()">Export session log (.json)</button>
+  </div>
+</div>
+
+<!-- ═══════════ EDIT BUTTON ═══════════ -->
+<button class="btn btn-edit" id="btnEditToggle" onclick="openEdit()">✎</button>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let tasks = [];
+let currentIndex = 0;
+let timerSeconds = 0;
+let timerInterval = null;
+let isPaused = false;
+let sessionSeconds = 0;
+let previousFlapText = '';
+let previousTimerText = '';
+let deadlineHour = 18;
+let deadlineMinute = 0;
+
+// ═══════════════════════════════════════════
+// SESSION PERSISTENCE (per day, localStorage + downloadable JSON)
+// ═══════════════════════════════════════════
+function getTodayKey() {
+  return 'splitflap_session_' + new Date().toISOString().slice(0, 10);
+}
+
+function loadSession() {
+  try {
+    const data = JSON.parse(localStorage.getItem(getTodayKey()));
+    if (data) {
+      sessionSeconds = data.sessionSeconds || 0;
+      return data;
+    }
+  } catch (e) {}
+  sessionSeconds = 0;
+  return null;
+}
+
+function saveSession() {
+  const data = {
+    date: new Date().toISOString().slice(0, 10),
+    sessionSeconds,
+    tasksCompleted: tasks.filter(t => t.done).length,
+    tasksTotal: tasks.length,
+    completedTasks: tasks.filter(t => t.done).map(t => t.text),
+    remainingTasks: tasks.filter(t => !t.done).map(t => t.text),
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem(getTodayKey(), JSON.stringify(data));
+
+  // Also save to disk via server
+  fetch('/save-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(() => {}); // silent fail if server doesn't support it
+}
+
+function exportSessionLog() {
+  // Gather all session keys from localStorage
+  const sessions = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('splitflap_session_')) {
+      try {
+        sessions.push(JSON.parse(localStorage.getItem(key)));
+      } catch (e) {}
+    }
+  }
+  sessions.sort((a, b) => a.date.localeCompare(b.date));
+
+  const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `splitflap-sessions-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════
+// PARSE MARKDOWN
+// ═══════════════════════════════════════════
+function parseMD(text) {
+  const lines = text.split('\n');
+  const parsed = [];
+  for (const line of lines) {
+    let trimmed = line.trim();
+    if (!trimmed.startsWith('- ')) continue;
+    trimmed = trimmed.slice(2).trim();
+
+    let nonNegotiable = false;
+    let taskText = trimmed;
+
+    // Check for **!text** pattern
+    if (/^\*\*!(.+)\*\*$/.test(taskText)) {
+      nonNegotiable = true;
+      taskText = taskText.match(/^\*\*!(.+)\*\*$/)[1].trim();
+    }
+
+    parsed.push({
+      text: taskText,
+      nonNegotiable,
+      done: false
+    });
+  }
+  return parsed;
+}
+
+// ═══════════════════════════════════════════
+// SPLIT-FLAP RENDERING
+// ═══════════════════════════════════════════
+function createFlapChar(char, prevChar, index, forceFlip) {
+  const el = document.createElement('div');
+  el.className = 'flap-char' + (char === ' ' ? ' space' : '');
+
+  if (char === ' ') return el;
+
+  const shouldFlip = forceFlip || (prevChar !== undefined && prevChar !== char);
+
+  // Start hidden, reveal with flip
+  el.innerHTML = `
+    <div class="top"><span>${char}</span></div>
+    <div class="bottom"><span>${char}</span></div>
+  `;
+
+  if (shouldFlip) {
+    const fromChar = prevChar || ' ';
+    const delay = forceFlip ? index * 0.06 : index * 0.04;
+
+    const flipTop = document.createElement('div');
+    flipTop.className = 'flipping flip-top';
+    flipTop.innerHTML = `<span>${fromChar}</span>`;
+    flipTop.style.animationDelay = `${delay}s`;
+
+    const flipBottom = document.createElement('div');
+    flipBottom.className = 'flipping flip-bottom';
+    flipBottom.innerHTML = `<span>${char}</span>`;
+    flipBottom.style.animationDelay = `${delay + 0.15}s`;
+
+    el.appendChild(flipTop);
+    el.appendChild(flipBottom);
+
+    // On initial load, hide the resting state until flip lands
+    if (forceFlip) {
+      el.querySelector('.top').style.opacity = '0';
+      el.querySelector('.bottom').style.opacity = '0';
+      setTimeout(() => {
+        el.querySelector('.top').style.opacity = '1';
+        el.querySelector('.bottom').style.opacity = '1';
+      }, delay * 1000 + 150);
+    }
+
+    setTimeout(() => {
+      flipTop.remove();
+      flipBottom.remove();
+    }, (delay * 1000) + 400);
+  }
+
+  return el;
+}
+
+function sizeFlapRow(container, text) {
+  const upper = text.toUpperCase();
+  const charCount = upper.replace(/ /g, '').length;
+  const spaceCount = (upper.match(/ /g) || []).length;
+
+  const housing = container.closest('.flap-housing') || container.closest('.timer-housing');
+  const availableWidth = housing ? housing.clientWidth - 48 : window.innerWidth * 0.9;
+
+  const gap = 4;
+  const totalGaps = (upper.length - 1) * gap;
+  // Space chars are ~40% width of a letter char
+  const effectiveChars = charCount + spaceCount * 0.4;
+  const charW = Math.floor((availableWidth - totalGaps) / effectiveChars);
+
+  // Clamp: big but not absurdly huge
+  const w = Math.max(20, Math.min(charW, 80));
+  const h = Math.round(w * 1.45);
+  const font = Math.round(w * 0.72);
+  const spaceW = Math.round(w * 0.4);
+
+  container.style.setProperty('--flap-w', w + 'px');
+  container.style.setProperty('--flap-h', h + 'px');
+  container.style.setProperty('--flap-font', font + 'px');
+  container.style.setProperty('--flap-space-w', spaceW + 'px');
+  container.style.setProperty('--flap-gap', gap + 'px');
+}
+
+function renderFlaps(container, text, prevText) {
+  container.innerHTML = '';
+  const upper = text.toUpperCase();
+  const prevUpper = (prevText || '').toUpperCase();
+  const isFirstLoad = !prevText;
+
+  sizeFlapRow(container, upper);
+
+  for (let i = 0; i < upper.length; i++) {
+    const char = upper[i] || ' ';
+    const prev = prevUpper[i];
+    container.appendChild(createFlapChar(char, prev, i, isFirstLoad));
+  }
+}
+
+function renderTimerFlaps(container, timeStr, prevTimeStr) {
+  container.innerHTML = '';
+  const parts = timeStr.split(':');
+  const prevParts = (prevTimeStr || '00:00:00').split(':');
+
+  // Timer always has 6 digit chars — size them generously
+  const housing = container.closest('.timer-housing');
+  const availW = housing ? housing.clientWidth - 48 : 600;
+  const sepSpace = 2 * 18; // 2 separators
+  const totalGaps = 5 * 4;
+  const tw = Math.max(28, Math.min(Math.floor((availW - sepSpace - totalGaps) / 6), 64));
+  const th = Math.round(tw * 1.45);
+  const tf = Math.round(tw * 0.72);
+
+  container.style.setProperty('--flap-w', tw + 'px');
+  container.style.setProperty('--flap-h', th + 'px');
+  container.style.setProperty('--flap-font', tf + 'px');
+
+  const isFirst = !prevTimeStr;
+
+  for (let p = 0; p < parts.length; p++) {
+    if (p > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'timer-separator' + (isPaused ? ' paused' : '');
+      sep.textContent = ':';
+      container.appendChild(sep);
+    }
+    for (let i = 0; i < parts[p].length; i++) {
+      const char = parts[p][i];
+      const prev = prevParts[p] ? prevParts[p][i] : '0';
+      container.appendChild(createFlapChar(char, prev, p * 2 + i, isFirst));
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// TASK DISPLAY
+// ═══════════════════════════════════════════
+function getCurrentTask() {
+  const pending = tasks.filter(t => !t.done);
+  if (pending.length === 0) return null;
+  // Find the first non-done task from current index onwards
+  for (let i = currentIndex; i < tasks.length; i++) {
+    if (!tasks[i].done) return tasks[i];
+  }
+  // Wrap around
+  for (let i = 0; i < currentIndex; i++) {
+    if (!tasks[i].done) return tasks[i];
+  }
+  return null;
+}
+
+function getTaskRank(task) {
+  const pending = tasks.filter(t => !t.done);
+  return pending.indexOf(task) + 1;
+}
+
+function displayCurrentTask() {
+  const task = getCurrentTask();
+  const flapRow = document.getElementById('flapRow');
+  const counter = document.getElementById('taskCounter');
+  const controls = document.getElementById('controls');
+  const rankCard = document.getElementById('rankCard');
+  const rankNumber = document.getElementById('rankNumber');
+  const rankLabel = document.getElementById('rankLabel');
+
+  const totalPending = tasks.filter(t => !t.done).length;
+  const totalDone = tasks.filter(t => t.done).length;
+
+  if (!task) {
+    const newText = 'ALL DONE!';
+    renderFlaps(flapRow, newText, previousFlapText);
+    previousFlapText = newText;
+    counter.textContent = `${totalDone} COMPLETED`;
+    rankCard.classList.add('hidden');
+    updateNonnegCounter();
+    controls.innerHTML = `
+      <div class="all-done-message">
+        <span class="emoji">🎉</span>
+        <h2>You crushed it.</h2>
+        <p>All tasks complete. Go enjoy your day.</p>
+      </div>
+    `;
+    stopTimer();
+    return;
+  }
+
+  // Restore control buttons if they were replaced by "all done"
+  if (!document.getElementById('btnDone')) {
+    controls.innerHTML = `
+      <button class="btn btn-pause" id="btnPause" onclick="togglePause()">PAUSE</button>
+      <button class="btn btn-done" id="btnDone" onclick="completeTask()">DONE</button>
+      <button class="btn btn-skip" id="btnSkip" onclick="skipTask()">SKIP →</button>
+    `;
+  }
+
+  const prefix = task.nonNegotiable ? '! ' : '';
+  const displayText = prefix + task.text;
+  renderFlaps(flapRow, displayText, previousFlapText);
+  previousFlapText = displayText.toUpperCase();
+
+  const currentNum = totalDone + 1;
+  counter.textContent = `${currentNum} / ${tasks.length}`;
+
+  // Rank card
+  const rank = getTaskRank(task);
+  rankCard.classList.remove('hidden');
+  rankNumber.textContent = `#${rank}`;
+  rankLabel.textContent = `of ${totalPending} remaining`;
+
+  // Non-negotiable counter
+  updateNonnegCounter();
+}
+
+// ═══════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════
+function formatTime(seconds) {
+  const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function updateTimer() {
+  const timeStr = formatTime(timerSeconds);
+  const timerFlaps = document.getElementById('timerFlaps');
+  renderTimerFlaps(timerFlaps, timeStr, previousTimerText);
+  previousTimerText = timeStr;
+}
+
+function updateSessionTimer() {
+  const timeStr = formatTime(sessionSeconds);
+  const el = document.getElementById('sessionTime');
+  if (el) el.textContent = timeStr;
+}
+
+function updateDeadlineCountdown() {
+  const bar = document.getElementById('deadlineBar');
+  const valueEl = document.getElementById('countdownValue');
+  const unitEl = document.getElementById('countdownUnit');
+  const progressEl = document.getElementById('deadlineProgress');
+  if (!bar || !valueEl) return;
+
+  const now = new Date();
+  const deadline = new Date();
+  deadline.setHours(deadlineHour, deadlineMinute, 0, 0);
+
+  const diffMs = deadline - now;
+  const diffSec = Math.floor(diffMs / 1000);
+
+  // Progress: assume workday started at 8am
+  const dayStart = new Date();
+  dayStart.setHours(8, 0, 0, 0);
+  const totalSpan = deadline - dayStart;
+  const elapsed = now - dayStart;
+  const pct = Math.max(0, Math.min(100, (elapsed / totalSpan) * 100));
+  progressEl.style.width = pct + '%';
+
+  bar.classList.remove('urgent', 'overdue');
+
+  if (diffSec <= 0) {
+    const overMin = Math.abs(Math.ceil(diffSec / 60));
+    valueEl.textContent = `+${overMin}m`;
+    unitEl.textContent = 'overdue';
+    bar.classList.add('overdue');
+    progressEl.style.width = '100%';
+  } else if (diffSec < 1800) {
+    // Under 30 min — urgent, show mm:ss
+    const m = Math.floor(diffSec / 60);
+    const s = diffSec % 60;
+    valueEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    unitEl.textContent = 'left';
+    bar.classList.add('urgent');
+  } else if (diffSec < 3600) {
+    // Under 1 hour
+    const m = Math.ceil(diffSec / 60);
+    valueEl.textContent = `${m}m`;
+    unitEl.textContent = 'remaining';
+  } else {
+    const h = Math.floor(diffSec / 3600);
+    const m = Math.floor((diffSec % 3600) / 60);
+    valueEl.textContent = m > 0 ? `${h}h ${m}m` : `${h}h`;
+    unitEl.textContent = 'remaining';
+  }
+}
+
+function startTimer() {
+  if (timerInterval) return;
+  timerInterval = setInterval(() => {
+    if (!isPaused) {
+      timerSeconds++;
+      sessionSeconds++;
+      updateTimer();
+      updateSessionTimer();
+      if (sessionSeconds % 10 === 0) saveSession();
+    }
+    updateDeadlineCountdown();
+  }, 1000);
+  updateTimer();
+  updateSessionTimer();
+  updateDeadlineCountdown();
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function updateNonnegCounter() {
+  const card = document.getElementById('nonnegCard');
+  const countEl = document.getElementById('nonnegCount');
+  if (!card || !countEl) return;
+
+  const remaining = tasks.filter(t => t.nonNegotiable && !t.done).length;
+  countEl.textContent = remaining;
+
+  if (remaining === 0 && tasks.some(t => t.nonNegotiable)) {
+    card.classList.add('all-clear');
+  } else {
+    card.classList.remove('all-clear');
+  }
+}
+
+// Deadline input handler
+document.getElementById('deadlineInput').addEventListener('change', (e) => {
+  const [h, m] = e.target.value.split(':').map(Number);
+  deadlineHour = h;
+  deadlineMinute = m;
+  localStorage.setItem('splitflap_deadline', e.target.value);
+  updateDeadlineCountdown();
+});
+
+// Restore saved deadline
+(function restoreDeadline() {
+  const saved = localStorage.getItem('splitflap_deadline');
+  if (saved) {
+    const [h, m] = saved.split(':').map(Number);
+    deadlineHour = h;
+    deadlineMinute = m;
+    document.getElementById('deadlineInput').value = saved;
+  }
+})();
+
+function togglePause() {
+  isPaused = !isPaused;
+  const btn = document.getElementById('btnPause');
+  btn.textContent = isPaused ? 'RESUME' : 'PAUSE';
+  btn.classList.toggle('active', isPaused);
+
+  // Update separator blink
+  document.querySelectorAll('.timer-separator').forEach(s => {
+    s.classList.toggle('paused', isPaused);
+  });
+}
+
+// ═══════════════════════════════════════════
+// CELEBRATION ANIMATION
+// ═══════════════════════════════════════════
+function celebrate() {
+  // Screen flash
+  const flash = document.getElementById('screenFlash');
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 600);
+
+  // Confetti
+  const container = document.getElementById('celebration');
+  const colors = ['#4ecb71', '#e8a838', '#f5e6c8', '#e85454', '#5b8def', '#d4a5ff', '#ff6b9d'];
+  const shapes = ['circle', 'square', 'triangle'];
+
+  for (let i = 0; i < 80; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 6 + Math.random() * 10;
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+    piece.style.left = `${30 + Math.random() * 40}%`;
+    piece.style.top = '50%';
+    piece.style.width = `${size}px`;
+    piece.style.height = `${size}px`;
+    piece.style.background = color;
+
+    if (shape === 'circle') piece.style.borderRadius = '50%';
+    else if (shape === 'triangle') {
+      piece.style.background = 'transparent';
+      piece.style.width = '0';
+      piece.style.height = '0';
+      piece.style.borderLeft = `${size/2}px solid transparent`;
+      piece.style.borderRight = `${size/2}px solid transparent`;
+      piece.style.borderBottom = `${size}px solid ${color}`;
+    }
+
+    container.appendChild(piece);
+
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 200 + Math.random() * 600;
+    const dx = Math.cos(angle) * velocity;
+    const dy = Math.sin(angle) * velocity - 400;
+    const rotation = Math.random() * 1080 - 540;
+
+    piece.animate([
+      { opacity: 1, transform: 'translate(0, 0) rotate(0deg) scale(1)' },
+      { opacity: 1, transform: `translate(${dx * 0.5}px, ${dy * 0.3}px) rotate(${rotation * 0.5}deg) scale(1.2)`, offset: 0.3 },
+      { opacity: 0, transform: `translate(${dx}px, ${dy + 500}px) rotate(${rotation}deg) scale(0.3)` }
+    ], {
+      duration: 1200 + Math.random() * 800,
+      delay: Math.random() * 200,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      fill: 'forwards'
+    });
+  }
+
+  // Burst ring
+  const ring = document.createElement('div');
+  ring.style.cssText = `
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 3px solid var(--success);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  `;
+  container.appendChild(ring);
+
+  ring.animate([
+    { width: '10px', height: '10px', opacity: 0.8, borderWidth: '3px' },
+    { width: '400px', height: '400px', opacity: 0, borderWidth: '1px' }
+  ], {
+    duration: 700,
+    easing: 'ease-out',
+    fill: 'forwards'
+  });
+
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 2500);
+}
+
+// ═══════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════
+let completing = false;
+
+function completeTask() {
+  if (completing) return;
+  const task = getCurrentTask();
+  if (!task) return;
+
+  completing = true;
+  task.done = true;
+  celebrate();
+  saveSession();
+  syncTasksToServer();
+
+  // Reset timer for next task
+  timerSeconds = 0;
+
+  setTimeout(() => {
+    advanceToNext();
+    displayCurrentTask();
+    completing = false;
+  }, 800);
+}
+
+function skipTask() {
+  if (completing) return;
+  advanceToNext();
+  timerSeconds = 0;
+  displayCurrentTask();
+}
+
+function advanceToNext() {
+  if (tasks.length === 0) return;
+  // Clamp currentIndex
+  if (currentIndex >= tasks.length) currentIndex = 0;
+
+  let start = currentIndex;
+  do {
+    currentIndex = (currentIndex + 1) % tasks.length;
+    if (!tasks[currentIndex].done) return;
+  } while (currentIndex !== start);
+}
+
+// ═══════════════════════════════════════════
+// EDIT SCREEN
+// ═══════════════════════════════════════════
+function openEdit() {
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('editScreen').classList.remove('hidden');
+  document.getElementById('btnEditToggle').style.display = 'none';
+  renderEditList();
+  updateEditDate();
+}
+
+function restoreTaskDisplay() {
+  const taskDisplay = document.getElementById('taskDisplay');
+  // If flapRow is missing (file loader replaced it), restore the markup
+  if (!document.getElementById('flapRow')) {
+    taskDisplay.innerHTML = `
+      <div class="task-label">
+        <span>CURRENT TASK</span>
+        <span class="task-counter" id="taskCounter">— / —</span>
+      </div>
+      <div class="flap-row" id="flapRow"></div>
+    `;
+  }
+}
+
+function closeEdit() {
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('editScreen').classList.add('hidden');
+  document.getElementById('btnEditToggle').style.display = '';
+
+  if (tasks.length > 0) {
+    restoreTaskDisplay();
+    previousFlapText = '';
+    displayCurrentTask();
+    startTimer();
+    syncTasksToServer();
+  }
+}
+
+function getLocationLabel() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const abbr = now.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+
+  // PST/PDT → San Francisco
+  if (['PST', 'PDT'].includes(abbr) || tz === 'America/Los_Angeles') {
+    return 'San Francisco, PST';
+  }
+  // CET/CEST → Berlin / Munich
+  if (['CET', 'CEST'].includes(abbr) || tz === 'Europe/Berlin' || tz === 'Europe/Munich' || tz === 'Europe/Zurich' || tz === 'Europe/Vienna') {
+    return 'Berlin / Munich, CET';
+  }
+  return tz;
+}
+
+function updateEditDate() {
+  const now = new Date();
+  const dayStr = now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const location = getLocationLabel();
+  document.getElementById('editDate').innerHTML = `${dayStr}<br>${location}`;
+}
+
+let dragSrcIndex = null;
+
+function renderEditList() {
+  const list = document.getElementById('editList');
+  list.innerHTML = '';
+
+  tasks.forEach((task, i) => {
+    const li = document.createElement('li');
+    li.className = 'edit-item' +
+      (task.done ? ' done' : '') +
+      (task.nonNegotiable ? ' non-negotiable' : '');
+    li.dataset.index = i;
+
+    // Drag handle
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    if (!task.done) {
+      li.draggable = true;
+      li.addEventListener('dragstart', (e) => {
+        dragSrcIndex = i;
+        li.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      li.addEventListener('dragend', () => {
+        li.classList.remove('dragging');
+        list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        dragSrcIndex = null;
+      });
+      li.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        li.classList.add('drag-over');
+      });
+      li.addEventListener('dragleave', () => {
+        li.classList.remove('drag-over');
+      });
+      li.addEventListener('drop', (e) => {
+        e.preventDefault();
+        li.classList.remove('drag-over');
+        const targetIndex = i;
+        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+          const [moved] = tasks.splice(dragSrcIndex, 1);
+          tasks.splice(targetIndex, 0, moved);
+          if (currentIndex === dragSrcIndex) currentIndex = targetIndex;
+          else if (currentIndex >= Math.min(dragSrcIndex, targetIndex) && currentIndex <= Math.max(dragSrcIndex, targetIndex)) {
+            currentIndex += dragSrcIndex < targetIndex ? -1 : 1;
+          }
+          renderEditList();
+        }
+      });
+    }
+
+    // Priority toggle
+    const toggle = document.createElement('button');
+    toggle.className = 'priority-toggle btn' + (task.nonNegotiable ? ' active' : '');
+    toggle.textContent = '❗';
+    toggle.title = task.nonNegotiable ? 'Remove non-negotiable' : 'Mark as non-negotiable';
+    if (!task.done) {
+      toggle.onclick = () => {
+        task.nonNegotiable = !task.nonNegotiable;
+        renderEditList();
+      };
+    } else {
+      toggle.style.opacity = '0.3';
+      toggle.style.pointerEvents = 'none';
+    }
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-text';
+    input.value = task.text;
+    input.disabled = task.done;
+    input.addEventListener('change', () => {
+      task.text = input.value;
+    });
+
+    const status = document.createElement('span');
+    status.className = 'status-badge';
+    status.textContent = task.done ? '✅' : '';
+
+    const del = document.createElement('button');
+    del.className = 'delete-btn btn';
+    del.textContent = '✕';
+    del.onclick = () => {
+      tasks.splice(i, 1);
+      if (currentIndex >= tasks.length) currentIndex = 0;
+      renderEditList();
+    };
+
+    li.appendChild(handle);
+    li.appendChild(toggle);
+    li.appendChild(input);
+    li.appendChild(status);
+    if (!task.done) li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+
+function parseTaskLine(raw) {
+  let val = raw.trim();
+  if (!val) return null;
+
+  // Strip leading "- " markdown list prefix
+  if (val.startsWith('- ')) val = val.slice(2).trim();
+
+  let nonNegotiable = false;
+  // **!text** or **! text**
+  if (/^\*\*!/.test(val)) {
+    nonNegotiable = true;
+    val = val.replace(/^\*\*!\s*/, '').replace(/\*\*$/, '').trim();
+  } else if (val.startsWith('!')) {
+    nonNegotiable = true;
+    val = val.slice(1).trim();
+  }
+
+  if (!val) return null;
+  return { text: val, nonNegotiable, done: false };
+}
+
+function addNewTask() {
+  const input = document.getElementById('addTaskInput');
+  let val = input.value.trim();
+  if (!val) return;
+
+  const task = parseTaskLine(val);
+  if (task) tasks.push(task);
+  input.value = '';
+  renderEditList();
+}
+
+function addMultipleTasks(text) {
+  const lines = text.split(/\r?\n/);
+  let added = 0;
+  for (const line of lines) {
+    const task = parseTaskLine(line);
+    if (task) {
+      tasks.push(task);
+      added++;
+    }
+  }
+  if (added > 0) renderEditList();
+  return added;
+}
+
+const addInput = document.getElementById('addTaskInput');
+
+addInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addNewTask();
+});
+
+addInput.addEventListener('paste', (e) => {
+  const pasted = (e.clipboardData || window.clipboardData).getData('text');
+  if (pasted.includes('\n')) {
+    e.preventDefault();
+    addMultipleTasks(pasted);
+    addInput.value = '';
+  }
+});
+
+// ═══════════════════════════════════════════
+// FILE LOADING
+// ═══════════════════════════════════════════
+function loadFromText(text) {
+  tasks = parseMD(text);
+  currentIndex = 0;
+  timerSeconds = 0;
+  previousFlapText = '';
+  previousTimerText = '';
+
+  if (tasks.length > 0) {
+    syncTasksToServer();
+    displayCurrentTask();
+    startTimer();
+  }
+}
+
+function loadFromAPI(apiTasks) {
+  tasks = apiTasks;
+  currentIndex = 0;
+  timerSeconds = 0;
+  previousFlapText = '';
+  previousTimerText = '';
+
+  if (tasks.length > 0) {
+    displayCurrentTask();
+    startTimer();
+  }
+}
+
+function syncTasksToServer() {
+  fetch('/api/tasks', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(tasks)
+  }).catch(() => {});
+}
+
+// ═══════════════════════════════════════════
+// INIT — try API first, then todos.md, then file picker
+// ═══════════════════════════════════════════
+async function init() {
+  loadSession();
+  updateSessionTimer();
+  updateDeadlineCountdown();
+
+  // 1. Try loading from API (tasks.json on server)
+  try {
+    const resp = await fetch('/api/tasks');
+    if (resp.ok) {
+      const apiTasks = await resp.json();
+      if (apiTasks.length > 0) {
+        loadFromAPI(apiTasks);
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // 2. Fallback: try todos.md
+  try {
+    const resp = await fetch('todos.md');
+    if (resp.ok) {
+      const text = await resp.text();
+      loadFromText(text);
+      return;
+    }
+  } catch (e) {}
+
+  // Show file picker UI
+  const flapRow = document.getElementById('flapRow');
+  const taskDisplay = document.getElementById('taskDisplay');
+  taskDisplay.innerHTML = `
+    <div class="file-loader">
+      <h2>Load your tasks</h2>
+      <p>Drop a markdown file with your todos.<br>Format: lines starting with <code>- </code></p>
+      <div class="file-drop-zone" id="dropZone">
+        <label>
+          <span class="drop-icon">📋</span>
+          <span class="drop-text">Drop .md file here or click to browse</span>
+          <input type="file" accept=".md,.txt" id="fileInput">
+        </label>
+      </div>
+    </div>
+  `;
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) readFile(fileInput.files[0]);
+  });
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      taskDisplay.innerHTML = `
+        <div class="task-label">
+          <span>CURRENT TASK</span>
+          <span class="task-counter" id="taskCounter">— / —</span>
+        </div>
+        <div class="flap-row" id="flapRow"></div>
+      `;
+      loadFromText(e.target.result);
+    };
+    reader.readAsText(file);
+  }
+
+  // Initialize timer display
+  updateTimer();
+}
+
+window.addEventListener('resize', () => {
+  displayCurrentTask();
+  updateTimer();
+});
+
+window.addEventListener('beforeunload', () => {
+  saveSession();
+});
+
+init();
+</script>
+</body>
+</html>

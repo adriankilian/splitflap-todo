@@ -1,0 +1,32 @@
+[
+  {
+    "text": "Send quarterly report",
+    "nonNegotiable": true,
+    "done": false
+  },
+  {
+    "text": "Call dentist",
+    "nonNegotiable": true,
+    "done": false
+  },
+  {
+    "text": "Water plants",
+    "nonNegotiable": false,
+    "done": true
+  },
+  {
+    "text": "Read chapter 5",
+    "nonNegotiable": false,
+    "done": false
+  },
+  {
+    "text": "Buy groceries",
+    "nonNegotiable": false,
+    "done": false
+  },
+  {
+    "text": "Clean desk",
+    "nonNegotiable": false,
+    "done": false
+  }
+]
