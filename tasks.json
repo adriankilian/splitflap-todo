@@ -1,31 +1,56 @@
 [
   {
-    "text": "Send quarterly report",
+    "text": "Medical Valley reports",
     "nonNegotiable": true,
     "done": false
   },
   {
-    "text": "Call dentist",
+    "text": "FDA SBD tax docs",
     "nonNegotiable": true,
     "done": false
   },
   {
-    "text": "Water plants",
-    "nonNegotiable": false,
-    "done": true
+    "text": "2025 accounting with RJ",
+    "nonNegotiable": true,
+    "done": false
   },
   {
-    "text": "Read chapter 5",
+    "text": "US CPA next step",
+    "nonNegotiable": true,
+    "done": false
+  },
+  {
+    "text": "YC FDA update",
+    "nonNegotiable": true,
+    "done": false
+  },
+  {
+    "text": "Daniel Hawkins FDA help",
     "nonNegotiable": false,
     "done": false
   },
   {
-    "text": "Buy groceries",
+    "text": "Anantha / Zimmer status",
     "nonNegotiable": false,
     "done": false
   },
   {
-    "text": "Clean desk",
+    "text": "Schedule Danny call",
+    "nonNegotiable": false,
+    "done": false
+  },
+  {
+    "text": "Ripstar backend review",
+    "nonNegotiable": false,
+    "done": false
+  },
+  {
+    "text": "Cybermet pentest slot",
+    "nonNegotiable": false,
+    "done": false
+  },
+  {
+    "text": "Clinical reviews",
     "nonNegotiable": false,
     "done": false
   }
