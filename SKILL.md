@@ -1,8 +1,14 @@
+---
+name: splitflap-todo
+description: Open and manage the user's daily todo list in a physical split-flap mechanical display. Use when the user says to open todos in splitflap, show tasks as flaps, load today's list into the mechanical display, or manage the splitflap todo board through the local MCP/live UI.
+allowed-tools: Bash, Read
+---
+
 # splitflap (MCP + live UI version)
 
 **Open the user's daily todo list in the physical split-flap mechanical display (live MCP-controlled version).**
 
-The user wants the **MCP/live path** (not the static generator). This gives them a persistent UI at http://localhost:8787 that Claude can actively control in real time while the beautiful flap animations are visible.
+The user wants the **MCP/live path** (not the static generator). This gives them a persistent UI at http://localhost:8787 that Claude Desktop, Codex Desktop, or another MCP client can actively control in real time while the beautiful flap animations are visible.
 
 ## When to use this skill
 - User says: "open this in the splitflap", "show my todos as flaps", "load today's list into the mechanical display", "open the splitflap", "I want to see it in the flaps", etc.
@@ -12,16 +18,17 @@ The user wants the **MCP/live path** (not the static generator). This gives them
 1. Collect / confirm the current day's todo list from the conversation (markdown or structured).
    - Mark must-dos with `**!` or `!` prefix.
 
-2. **First action**: Call the MCP tool `open_splitflap()`.
+2. **First action**: Call the MCP tool `open_splitflap()` when it is available.
    - This tool automatically starts the backend web server if it isn't running.
    - It then opens the physical split-flap UI in a **new Chrome window**.
    - You no longer need to tell the user (or run yourself) `python3 server.py`.
+   - If the MCP tool is not exposed in the current Claude or Codex session, run `python3 /Users/adrian/code/splitflap-todo/server.py` and open http://localhost:8787 as the fallback.
 
 3. Load the list:
    - Preferred: `set_tasks_markdown("...")` with the full markdown list (supports `**!` for non-negotiables).
    - Or `set_tasks([...])` with array of objects.
 
-4. You can now freely use the other tools:
+4. You can now freely use the other tools when available:
    - `get_status()` — quick overview + non-negotiables left
    - `add_tasks([...])`
    - `complete_task("partial text")`
@@ -33,8 +40,9 @@ The UI in the browser will react live to your tool calls (the flaps will re-rend
 
 ## Important notes
 - The first time you call any tool (especially `open_splitflap`), the MCP server will start the web backend for you in the background. The user never has to launch `server.py` manually in a terminal.
+- The project lives at `/Users/adrian/code/splitflap-todo`.
 - Once `open_splitflap()` has succeeded, the other tools work against the live UI.
-- The browser window can stay open all day. Claude can keep managing the list through the MCP tools.
+- The browser window can stay open all day. Claude or Codex can keep managing the list through the MCP tools.
 - Non-negotiable tasks are specially highlighted in the UI.
 
 ## Tool cheat sheet (for the model)

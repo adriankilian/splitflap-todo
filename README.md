@@ -13,7 +13,7 @@ The entire frontend is a single self-contained `index.html` with detailed CSS an
 - **Non-negotiable tasks** — mark critical items with `!` or `**!` (they get special treatment in the UI and APIs)
 - **Local-first** — everything runs on your machine
 - **REST API** — full control from scripts, automation, or AI agents
-- **MCP server** — integrate directly with Claude Desktop (or any MCP client)
+- **MCP server** — integrate directly with Claude Desktop, Codex Desktop, or any MCP client
 - **Session tracking** — records time spent and daily progress
 - Dark, tactile industrial aesthetic with paper-like flap textures
 
@@ -39,20 +39,20 @@ See [SKILL.md](./SKILL.md) for the exact instructions an AI assistant should fol
 
 ---
 
-## Live MCP Mode (recommended when you want Claude to actively control the list)
+## Live MCP Mode (recommended when you want Claude or Codex to actively control the list)
 
-This is the path that gives you a persistent, live-updating physical flap UI that Claude can read and write in real time.
+This is the path that gives you a persistent, live-updating physical flap UI that Claude Desktop, Codex Desktop, or another MCP client can read and write in real time.
 
 **You no longer have to manually run `python3 server.py`.**
 
-- The Splitflap Todo MCP server (when loaded in Claude Desktop or via the `claude` CLI) will automatically start the web backend the first time you use any of its tools.
+- The Splitflap Todo MCP server (when loaded in Claude Desktop, Codex Desktop, or via an MCP-capable CLI) will automatically start the web backend the first time you use any of its tools.
 - Call the `open_splitflap()` tool (exposed by the MCP) when the user says "open in splitflap", "show the flaps", etc. It will:
   1. Start the server in the background if needed.
   2. Open http://localhost:8787 in a new Chrome window.
 
 See [SKILL.md](./SKILL.md) for the exact instructions to give your AI assistant.
 
-Once the UI is open, you (via Claude) can continue using:
+Once the UI is open, you can continue using:
 - `set_tasks_markdown(...)`
 - `add_tasks(...)`
 - `complete_task(...)`
@@ -91,9 +91,9 @@ curl -X POST http://localhost:8787/api/tasks/add \
   -d '["**! Review the new PR", "Water the plants"]'
 ```
 
-## MCP / Claude Desktop Integration
+## MCP / Claude Desktop and Codex Desktop Integration
 
-There's also an MCP server (`mcp_server.py`) so Claude can directly manage your splitflap todo list.
+There's also an MCP server (`mcp_server.py`) so Claude Desktop and Codex Desktop can directly manage your splitflap todo list.
 
 1. Make sure the web server is running (`python3 server.py`)
 2. The MCP script uses `uv` (https://docs.astral.sh/uv/):
@@ -110,13 +110,19 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "splitflap-todo": {
       "command": "uv",
-      "args": ["run", "/absolute/path/to/splitflap-todo/mcp_server.py"]
+      "args": ["run", "/Users/adrian/code/splitflap-todo/mcp_server.py"]
     }
   }
 }
 ```
 
-Available tools in Claude:
+For Codex Desktop, add an MCP server entry for `splitflap-todo` that runs:
+
+```bash
+uv run /Users/adrian/code/splitflap-todo/mcp_server.py
+```
+
+Available tools:
 - `get_status`
 - `get_tasks`
 - `set_tasks`
