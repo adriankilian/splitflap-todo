@@ -46,6 +46,10 @@ env/
 *.log
 npm-debug.log*
 
+# Generated static splitflap displays (use the generator to create fresh ones)
+splitflap-*.html
+splitflap.html
+
 # OS generated
 Thumbs.db
 ehthumbs.db

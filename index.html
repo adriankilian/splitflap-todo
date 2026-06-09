@@ -1956,6 +1956,12 @@ async function init() {
   updateSessionTimer();
   updateDeadlineCountdown();
 
+  // Static / embedded mode (for generated single-file HTML, no server needed)
+  if (typeof window !== 'undefined' && window.INITIAL_TASKS && Array.isArray(window.INITIAL_TASKS) && window.INITIAL_TASKS.length > 0) {
+    loadFromAPI(window.INITIAL_TASKS);
+    return;
+  }
+
   // 1. Try loading from API (tasks.json on server)
   try {
     const resp = await fetch('/api/tasks');

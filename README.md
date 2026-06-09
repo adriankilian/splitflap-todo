@@ -17,18 +17,57 @@ The entire frontend is a single self-contained `index.html` with detailed CSS an
 - **Session tracking** — records time spent and daily progress
 - Dark, tactile industrial aesthetic with paper-like flap textures
 
-## Quick Start
+## Quick Start (Recommended — Zero Server)
 
 ```bash
 cd splitflap-todo
 
-# Start the server (Python 3)
-python3 server.py
+# Generate a beautiful standalone split-flap display from your list and open it
+python generate_splitflap.py --input todos.md --open
+# or
+python generate_splitflap.py --markdown "
+- **! Finish the report
+- Call dentist
+- Review PRs
+" --open
 ```
 
-Then open **http://localhost:8787** in your browser.
+This creates a fully self-contained `splitflap-YYYY-MM-DD.html` and opens it in a fresh Chrome window.  
+**No server, no ports, nothing else to launch.** Perfect for daily use.
 
-The server also watches/serves `tasks.json` and provides live API endpoints.
+See [SKILL.md](./SKILL.md) for the exact instructions an AI assistant should follow when you say "open this in the splitflap".
+
+---
+
+## Live MCP Mode (recommended when you want Claude to actively control the list)
+
+This is the path that gives you a persistent, live-updating physical flap UI that Claude can read and write in real time.
+
+**You no longer have to manually run `python3 server.py`.**
+
+- The Splitflap Todo MCP server (when loaded in Claude Desktop or via the `claude` CLI) will automatically start the web backend the first time you use any of its tools.
+- Call the `open_splitflap()` tool (exposed by the MCP) when the user says "open in splitflap", "show the flaps", etc. It will:
+  1. Start the server in the background if needed.
+  2. Open http://localhost:8787 in a new Chrome window.
+
+See [SKILL.md](./SKILL.md) for the exact instructions to give your AI assistant.
+
+Once the UI is open, you (via Claude) can continue using:
+- `set_tasks_markdown(...)`
+- `add_tasks(...)`
+- `complete_task(...)`
+- `get_status()`, etc.
+
+The browser flaps will reflect changes live.
+
+(The static generator is still available as a nice no-process alternative for one-off beautiful views.)
+
+## Quick manual start (if you want the UI without Claude)
+
+```bash
+python3 server.py
+# then open http://localhost:8787 in your browser
+```
 
 ## API
 
